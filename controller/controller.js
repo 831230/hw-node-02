@@ -84,7 +84,6 @@ export const actualizeStatusContact = async (req, res, next) => {
     if (validateResult.error || !req.body)
       return res.status(400).json({ message: validateResult.error.message });
 
-    console.log(id, req.body);
     const result = await updateStatusContact(id, req.body);
     if (!result) res.status(404).json({ message: "Not found" });
     if (result) res.status(200).json({ message: result });
