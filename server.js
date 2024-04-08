@@ -1,5 +1,20 @@
-const app = require('./app')
+import app from './app.js';
+import mongoose from 'mongoose';
+import dotenv from "dotenv";
 
-app.listen(3000, () => {
-  console.log("Server running. Use our API on port: 3000")
-})
+dotenv.config();
+
+const MONGODB_URI = process.env.MONGODB_URI;
+
+const PORT = 3000;
+app.listen(PORT, async() => {
+  try {
+    console.log("Connecting to MongoDB...");
+    await mongoose.connect(MONGODB_URI, { dbName: "db-contacts" });
+    console.log("Succesfully connected to MongoDB!!!");
+    console.log("Server running. Use our API on port: ", PORT);
+  } catch (error) {
+    console.log(error);
+    process.exit(1);
+  }
+});
