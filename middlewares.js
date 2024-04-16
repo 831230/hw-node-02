@@ -23,8 +23,8 @@ export default passport.use(
 );
 
 export const auth = (req, res, next) => {
-  passport.authenticate("jwt", {session: false}, (error, user) => {
-    if(!user || error) return res.status(401).json({message: "Not authorized"})
+  passport.authenticate("jwt", {session: false}, async(error, user) => {
+    if(!user || error || !user.token) return res.status(401).json({message: "Not authorized"})
     req.user = user;
     next();
   })(req, res, next)

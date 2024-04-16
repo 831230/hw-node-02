@@ -75,11 +75,6 @@ export const loginUser = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
-    const userId = req.user._id;
-    const user = await getUserById(userId);
-
-    if (!user) return res.status(401).json({ message: "Not authorized" });
-
     const token = null;
     await updateToken(user._id, { token });
     return res.status(204).json({ message: "You have successful logout" });
@@ -90,12 +85,6 @@ export const logout = async (req, res, next) => {
 
 export const currentUser = async (req, res, next) => {
   try {
-    const userId = req.user._id;
-    const user = await getUserById(userId);
-
-    if (!user || !user.token)
-      return res.status(401).json({ message: "Not authorized" });
-
     return res.status(200).json({
       user: {
         email: user.email,
