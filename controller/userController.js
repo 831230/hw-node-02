@@ -1,13 +1,17 @@
 import path from "node:path";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { MONGODB_URI } from "../server.js";
 import gravatar from "gravatar";
 import Jimp from "jimp";
 import fs from "node:fs/promises"
 import { nanoid } from "nanoid";
+import dotenv from "dotenv";
 
 import { IMAGE_DIR } from "../app.js";
+
+dotenv.config();
+
+const SECRET_JWT = process.env.SECRET_JWT;
 
 
 import {
@@ -75,7 +79,7 @@ export const loginUser = async (req, res, next) => {
       return res.status(401).json("Email or password is wrong");
 
     const payload = { id: user._id, email: user.email };
-    const token = jwt.sign(payload, MONGODB_URI);
+    const token = jwt.sign(payload, SECRET_JWT);
     await updateToken(user._id, { token });
 
     res.status(200).json({ token, user });
