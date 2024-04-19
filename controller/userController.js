@@ -1,12 +1,21 @@
+import path from "node:path";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { MONGODB_URI } from "../server.js";
+import gravatar from "gravatar";
+import Jimp from "jimp";
+import fs from "node:fs/promises"
+import { nanoid } from "nanoid";
+
+import { IMAGE_DIR } from "../app.js";
+
 
 import {
   findUserByEmail,
   createUser,
   updateToken,
   getUserById,
+  updateAvatar
 } from "../models/index.js";
 
 import Joi from "joi";
@@ -42,7 +51,9 @@ export const addUser = async (req, res, next) => {
 
     const hashedPassword = await hashPassword(password);
 
-    const result = await createUser({ password: hashedPassword, email });
+    const avatarURL = gravatar.url(email);
+
+    const result = await createUser({ password: hashedPassword, email, avatarURL });
     res.status(201).json({ ResponseBody: result });
   } catch (error) {
     next(error);
@@ -94,4 +105,32 @@ export const currentUser = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+}; 
+
+export const actualizeAvatar = async (req, res, next) => {
+  try {
+    const userId = req.user._id
+    const avatarId = nanoid();
+
+    const avatarImg = req.file;
+
+    const newFileName = [avatarId, avatarImg.originalname].join("_");
+
+    const avatarURL = path.join("avatars", newFileName);
+    
+    Jimp.read(avatarImg.path)
+      .then((img) => {
+        return img
+          .resize(250, 250)
+          .write(path.join(IMAGE_DIR, newFileName))
+      })
+      .then(() => fs.unlink(avatarImg.path))
+
+    await updateAvatar(userId, {avatarURL});
+    return res.status(200).json({avatarURL: avatarURL})
+
+  } catch (error) {
+    console.error(error);
+    next(error)
+  }
+}

@@ -20,10 +20,6 @@ export const getAll = async (req, res, next) => {
     const userId = req.user._id;
     const contacts = await listContacts(userId);
 
-    if (!req.user.token) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
-
     res.json(contacts);
   } catch (error) {
     next(error);
@@ -32,10 +28,6 @@ export const getAll = async (req, res, next) => {
 
 export const getById = async (req, res, next) => {
   try {
-    if (!req.user.token) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
-
     const id = req.params.contactId;
     const searchedContact = await getContactById(id);
     searchedContact
@@ -48,9 +40,6 @@ export const getById = async (req, res, next) => {
 
 export const addContact = async (req, res, next) => {
   try {
-    if (!req.user.token) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
     const { name, email, phone } = req.body;
 
     const validateResult = schema.validate(req.body);
@@ -71,10 +60,6 @@ export const addContact = async (req, res, next) => {
 
 export const deleteContact = async (req, res, next) => {
   try {
-    if (!req.user.token) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
-
     const id = req.params.contactId;
     const result = await removeContact(id);
 
@@ -87,10 +72,6 @@ export const deleteContact = async (req, res, next) => {
 
 export const actualizeContact = async (req, res, next) => {
   try {
-    if (!req.user.token) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
-
     const id = req.params.contactId;
     const validateResult = schema.validate(req.body);
     if (validateResult.error || !req.body)
@@ -107,10 +88,6 @@ export const actualizeContact = async (req, res, next) => {
 
 export const actualizeStatusContact = async (req, res, next) => {
   try {
-    if (!req.user.token) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
-
     const id = req.params.contactId;
     const validateResult = schema.validate(req.body);
     if (validateResult.error || !req.body)
