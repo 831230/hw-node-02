@@ -1,12 +1,25 @@
+import path from "node:path";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { MONGODB_URI } from "../server.js";
+import gravatar from "gravatar";
+import Jimp from "jimp";
+import fs from "node:fs/promises"
+import { nanoid } from "nanoid";
+import dotenv from "dotenv";
+
+import { IMAGE_DIR } from "../app.js";
+
+dotenv.config();
+
+const SECRET_JWT = process.env.SECRET_JWT;
+
 
 import {
   findUserByEmail,
   createUser,
   updateToken,
   getUserById,
+  updateAvatar
 } from "../models/index.js";
 
 import Joi from "joi";
@@ -42,7 +55,9 @@ export const addUser = async (req, res, next) => {
 
     const hashedPassword = await hashPassword(password);
 
-    const result = await createUser({ password: hashedPassword, email });
+    const avatarURL = gravatar.url(email);
+
+    const result = await createUser({ password: hashedPassword, email, avatarURL });
     res.status(201).json({ ResponseBody: result });
   } catch (error) {
     next(error);
@@ -64,7 +79,7 @@ export const loginUser = async (req, res, next) => {
       return res.status(401).json("Email or password is wrong");
 
     const payload = { id: user._id, email: user.email };
-    const token = jwt.sign(payload, MONGODB_URI);
+    const token = jwt.sign(payload, SECRET_JWT);
     await updateToken(user._id, { token });
 
     res.status(200).json({ token, user });
@@ -94,4 +109,32 @@ export const currentUser = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+}; 
+
+export const actualizeAvatar = async (req, res, next) => {
+  try {
+    const userId = req.user._id
+    const avatarId = nanoid();
+
+    const avatarImg = req.file;
+
+    const newFileName = [avatarId, avatarImg.originalname].join("_");
+
+    const avatarURL = path.join("avatars", newFileName);
+    
+    Jimp.read(avatarImg.path)
+      .then((img) => {
+        return img
+          .resize(250, 250)
+          .write(path.join(IMAGE_DIR, newFileName))
+      })
+      .then(() => fs.unlink(avatarImg.path))
+
+    await updateAvatar(userId, {avatarURL});
+    return res.status(200).json({avatarURL: avatarURL})
+
+  } catch (error) {
+    console.error(error);
+    next(error)
+  }
+}

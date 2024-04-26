@@ -17,8 +17,10 @@ export const updateStatusContact = (id, actualStatus) => Contact.findByIdAndUpda
 // =========================================USER==================================================
 export const findUserByEmail = (email) => User.findOne({email});
 
-export const createUser = ({password, email}) => User.create({password, email});
+export const createUser = ({password, email, avatarURL}) => User.create({password, email, avatarURL});
 
 export const updateToken = (id, token) => User.findByIdAndUpdate({_id: id}, token, {new: true});
+
+export const updateAvatar = (id, avatarURL) => User.findByIdAndUpdate({_id: id}, avatarURL, {new: true});
 
 export const getUserById = (id) => User.findById({_id: id});
