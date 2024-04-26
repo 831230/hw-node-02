@@ -3,7 +3,15 @@ import { auth } from "../../middlewares.js";
 
 import { upload } from "../../upload.js";
 
-import { addUser, loginUser, logout, currentUser, actualizeAvatar } from "../../controller/userController.js";
+import {
+  addUser,
+  loginUser,
+  logout,
+  currentUser,
+  actualizeAvatar,
+  verifyUser,
+  againVerifyUser,
+} from "../../controller/userController.js";
 
 const router = express.Router();
 
@@ -12,5 +20,7 @@ router.post("/login", loginUser);
 router.get("/logout", auth, logout);
 router.get("/current", auth, currentUser);
 router.patch("/avatars", auth, upload.single("avatar"), actualizeAvatar);
+router.get("/auth/verify/:verificationToken", verifyUser);
+router.post("/verify", againVerifyUser);
 
 export default router;

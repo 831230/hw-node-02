@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import gravatar from "gravatar";
 import Jimp from "jimp";
-import fs from "node:fs/promises"
+import fs from "node:fs/promises";
 import { nanoid } from "nanoid";
 import dotenv from "dotenv";
 
@@ -13,13 +13,15 @@ dotenv.config();
 
 const SECRET_JWT = process.env.SECRET_JWT;
 
+import { sendEmail } from "../service/emailService.js";
 
 import {
   findUserByEmail,
   createUser,
   updateToken,
-  getUserById,
-  updateAvatar
+  updateAvatar,
+  findUserByVerificationToken,
+  updateVerificationStatus,
 } from "../models/index.js";
 
 import Joi from "joi";
@@ -57,7 +59,18 @@ export const addUser = async (req, res, next) => {
 
     const avatarURL = gravatar.url(email);
 
-    const result = await createUser({ password: hashedPassword, email, avatarURL });
+    const verificationToken = nanoid();
+
+    const result = await createUser({
+      password: hashedPassword,
+      email,
+      avatarURL,
+      verificationToken,
+    });
+
+    const sendingEmailStatus = await sendEmail(verificationToken, email);
+    console.log({ sendingEmailStatus });
+
     res.status(201).json({ ResponseBody: result });
   } catch (error) {
     next(error);
@@ -109,11 +122,11 @@ export const currentUser = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-}; 
+};
 
 export const actualizeAvatar = async (req, res, next) => {
   try {
-    const userId = req.user._id
+    const userId = req.user._id;
     const avatarId = nanoid();
 
     const avatarImg = req.file;
@@ -121,20 +134,58 @@ export const actualizeAvatar = async (req, res, next) => {
     const newFileName = [avatarId, avatarImg.originalname].join("_");
 
     const avatarURL = path.join("avatars", newFileName);
-    
+
     Jimp.read(avatarImg.path)
       .then((img) => {
-        return img
-          .resize(250, 250)
-          .write(path.join(IMAGE_DIR, newFileName))
+        return img.resize(250, 250).write(path.join(IMAGE_DIR, newFileName));
       })
-      .then(() => fs.unlink(avatarImg.path))
+      .then(() => fs.unlink(avatarImg.path));
 
-    await updateAvatar(userId, {avatarURL});
-    return res.status(200).json({avatarURL: avatarURL})
-
+    await updateAvatar(userId, { avatarURL });
+    return res.status(200).json({ avatarURL: avatarURL });
   } catch (error) {
-    console.error(error);
-    next(error)
+    next(error);
   }
-}
+};
+
+export const verifyUser = async (req, res, next) => {
+  try {
+    const verificationToken = req.params.verificationToken;
+
+    const user = await findUserByVerificationToken(verificationToken);
+
+    if (!user) res.status(404).json("User not found");
+
+    if (user) {
+      await updateVerificationStatus(user._id, { verify: true });
+      res.status(200).json("Verification successful");
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const againVerifyUser = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    console.log({ email });
+    const validateEmail = schema.validate({ email });
+    if (validateEmail.error || !email) {
+      return res.status(400).json({ message: validateEmail.error });
+    }
+
+    const user = await findUserByEmail(email);
+
+    const { verificationToken, verify } = user;
+
+    if (verify) {
+      return res.status(400).json("Verification has already been passed");
+    }
+
+    await sendEmail(verificationToken, email);
+
+    res.status(200).json("Verification successful");
+  } catch (error) {
+    next(error);
+  }
+};
